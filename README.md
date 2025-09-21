@@ -4,9 +4,13 @@ VKDoom is a source port based on the DOOM engine with a focus on Vulkan and mode
 
 Please see license files for individual contributor licenses.
 
+**Addendum by [Marisa](https://github.com/OrdinaryMagician)**: This fork is a continuation of the original VKDoom by dpJudas et al, as it's been officially abandoned. At the moment, only some bug fixes will be happening *(both by yours truly and sparingly merged from upstream GZDoom when needed)*, but I do have some ideas here and there, maybe some additional features too while I'm at it. Any volunteers to help along are welcome, of course.
+
 ### Releases
 
-We do not have any official release of VKDoom yet. You can however download a binary build of the latest master branch commit at https://github.com/dpjudas/VkDoom/releases/tag/nightly
+~~We do not have any official release of VKDoom yet. You can however download a binary build of the latest master branch commit at https://github.com/dpjudas/VkDoom/releases/tag/nightly~~
+
+This fork currently doesn't do autobuilds, but do stay tuned.
 
 ### Build Guide
 
@@ -26,7 +30,7 @@ For Mac, the following project is recommended, as it contains all the dependenci
 After you have the packages installed, `cd` into your projects directory, and do the following to clone:
 
 ```sh
-git clone https://github.com/dpjudas/VkDoom
+git clone https://github.com/OrdinaryMagician/VkDoom_m VkDoom
 ```
 
 Afterwards, `cd` into it
