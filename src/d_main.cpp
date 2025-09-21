@@ -3216,7 +3216,7 @@ static int FileSystemPrintf(FSMessageLevel level, const char* fmt, ...)
 static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allwads, std::vector<std::string>& pwads)
 {
 	NetworkEntityManager::InitializeNetworkEntities();
-	bool dap_debugging = vm_debug.get();
+	bool dap_debugging = vm_debug;
 	if (Args->CheckValue("-debug") || dap_debugging)
 	{
 		dap_debugging = true;
@@ -3975,7 +3975,7 @@ int D_DoomMain_Game()
 		// Launch debug server if enabled
 		if (should_debug) {
 			debugServer = std::make_unique<DebugServer::DebugServer>();
-			int debug_port = vm_debug_port.get()->ToInt();
+			int debug_port = vm_debug_port;
 			if (should_debug) {
 				if (debug_port_arg) {
 					debug_port = atoi(debug_port_arg);
