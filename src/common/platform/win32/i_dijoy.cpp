@@ -38,6 +38,7 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #define DIRECTINPUT_VERSION 0x800
