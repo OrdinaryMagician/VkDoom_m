@@ -58,7 +58,6 @@
 #endif
 
 bool I_CreateVulkanSurface(VkInstance instance, VkSurfaceKHR *surface);
-#endif
 
 extern bool ToggleFullscreen;
 
