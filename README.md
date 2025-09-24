@@ -8,9 +8,7 @@ Please see license files for individual contributor licenses.
 
 ### Releases
 
-~~We do not have any official release of VKDoom yet. You can however download a binary build of the latest master branch commit at https://github.com/dpjudas/VkDoom/releases/tag/nightly~~
-
-This fork currently doesn't do autobuilds, but do stay tuned.
+We do not have any official release of VKDoom yet. You can however download a binary build of the latest master branch commit at https://github.com/OrdinaryMagician/VkDoom_m/releases/tag/nightly
 
 ### Build Guide
 
