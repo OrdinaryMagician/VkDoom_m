@@ -3331,7 +3331,7 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	allwads.shrink_to_fit();
 	SetMapxxFlag();
 
-	if (!restart)
+	if (!(restart || norun))
 	{
 		// Note: this has to happen after the file system has been initialized (backends may load shaders during initialization)
 		V_Init2();
@@ -3371,9 +3371,6 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 		delete exec;
 		exec = NULL;
 	}
-
-	if (!(restart || norun))
-		V_Init2();
 
 	// [RH] Initialize localizable strings. 
 	GStrings.LoadStrings(fileSystem, language);
