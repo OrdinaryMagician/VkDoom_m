@@ -360,7 +360,6 @@ OptionMenu "OptionsMenu" protected
 	Submenu "$OPTMNU_GAMEPLAY",			"GameplayMenu"
 	Submenu "$OPTMNU_DISPLAY",			"VideoOptions"
 	Submenu "$OPTMNU_SOUND",			"SoundOptions"
-	Submenu "$OPTMNU_MULTIPLAYER",		"MultiplayerMenu"
 	Submenu "$OPTMNU_MISCELLANEOUS",	"MiscOptions"
 	Submenu "$OPTMNU_SYSTEM",			"SystemMenu"
 	StaticText " "
