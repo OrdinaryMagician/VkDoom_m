@@ -379,6 +379,7 @@ OptionMenu "InputMenu" protected
 	Submenu "$OPTMNU_CONTROLS",			"CustomizeControls"
 	Submenu "$OPTMNU_MOUSE",			"MouseOptions"
 	Submenu "$OPTMNU_JOYSTICK",			"JoystickOptions"
+	Submenu "$OPTMNU_HAPTICS",			"HapticsOptions"
 
 	IfOption(Windows)
 	{
@@ -417,21 +418,6 @@ OptionMenu "GameplayMenu" protected
 	Submenu "$OPTMNU_COMPATIBILITY",	"CompatibilityOptions"
 	Submenu "$OPTMNU_AUTOMAP",			"AutomapOptions"
 	Submenu "$OPTMNU_HUD",				"HUDOptions"
-}
-
-//-------------------------------------------------------------------------------------------
-//
-// Multiplayer menu
-//
-//-------------------------------------------------------------------------------------------
-
-OptionMenu "MultiplayerMenu" protected
-{
-	Title "$OPTMNU_MULTIPLAYER"
-
-	Submenu "$OPTMNU_PLAYER",			"NewPlayerMenu"
-	Submenu "$GMPLYMNU_DEATHMATCH",		"DeathmatchOptions"
-	Submenu "$GMPLYMNU_COOPERATIVE",	"CoopOptions"
 	Submenu "$OPTMNU_NETWORK",			"NetworkOptions"
 }
 
@@ -873,7 +859,6 @@ OptionMenu "MouseOptions" protected
 	Option "$MOUSEMNU_LOOKSTRAFE",		"lookstrafe", "OnOff"
 }
 
-
 //-------------------------------------------------------------------------------------------
 //
 // Joystick Menu
@@ -885,12 +870,17 @@ OptionMenu "JoystickOptionsDefaults" protected
 	Title "$JOYMNU_OPTIONS"
 	Option "$JOYMNU_ENABLE", "use_joystick", "YesNo"
 	Option "$JOYMNU_NOMENU", "m_blockcontrollers", "YesNo"
+	ScaleSlider "$JOYMNU_HAPTICS", "haptics_strength", 0, 10, 1, "$OPTVAL_OFF", 0
 	IfOption(Windows)
 	{
 		Option "$JOYMNU_DINPUT", "joy_dinput", "YesNo"
 		Option "$JOYMNU_XINPUT", "joy_xinput", "YesNo"
 		Option "$JOYMNU_PS2", "joy_ps2raw", "YesNo"
 	}
+	StaticText ""
+	Slider "$JOYMNU_TURNSPEED",			"cl_analog_sensitivity_yaw", 0, 2.5, 0.1
+	Slider "$JOYMNU_LOOKSPEED",			"cl_analog_sensitivity_pitch", 0, 2.5, 0.1
+	Option "$JOYMNU_ANALOGSTRAFERUN",	"cl_analog_straferun", "OnOff"
 	StaticText ""
 	StaticTextSwitchable "$JOYMNU_NOCON", "$JOYMNU_CONFIG", "ConfigureMessage"
 	StaticTextSwitchable " ", "$JOYMNU_DISABLED1", "ConnectMessage1"
@@ -935,7 +925,6 @@ OptionMenu "JoystickConfigMenu" protected
 	Class "JoystickConfigMenu"
 	// Will be filled in by joystick code.
 }
-
 
 //-------------------------------------------------------------------------------------------
 //
@@ -1102,7 +1091,6 @@ OptionMenu "AppearOptions" protected
 	Option "$MISCMNU_WIPERCENT",				"wi_percents", "OnOff"
 
 }
-
 
 OptionMenu "SWROptions" protected
 {
@@ -1380,6 +1368,34 @@ OptionMenu "AltHUDOptions" protected
 	option "$ALTHUDMNU_COORDINATEMODE",			"map_point_coordinates", "AMCoordinates"
 	option "$ALTHUDMNU_STATSNAMECOLOR",			"hudcolor_statnames", "TextColors"
 	option "$ALTHUDMNU_STATSCOLOR",				"hudcolor_stats", "TextColors"
+}
+
+//-------------------------------------------------------------------------------------------
+//
+// Haptics menu
+//
+//-------------------------------------------------------------------------------------------
+
+OptionValue HapticsCompatTypes
+{
+	0, "$OPTVAL_WARN"
+	1, "$OPTVAL_NONE"
+	2, "$OPTVAL_MATCH"
+	3, "$OPTVAL_ALL"
+}
+
+OptionMenu "HapticsOptions" protected
+{
+	Title		"$HAPMNU_TITLE"
+
+	ScaleSlider	"$JOYMNU_HAPTICS",			"haptics_strength",		0, 10, 1, "$OPTVAL_OFF"
+	Option 		"$HAPMNU_COMPAT",			"haptics_compat",		"HapticsCompatTypes"
+	StaticText	""
+	StaticText	"$HAPMNU_OPTIONS"
+	Option		"$HAPMNU_OPT_MENU",			"haptics_do_menus",		"OnOff"
+	Option		"$HAPMNU_OPT_ACTION",		"haptics_do_action",	"OnOff"
+	Option		"$HAPMNU_OPT_DAMAGE",		"haptics_do_damage",	"OnOff"
+	Option		"$HAPMNU_OPT_WORLD",		"haptics_do_world",		"OnOff"
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1702,7 +1718,6 @@ OptionMenu ColorPickerMenu protected
 //
 //-------------------------------------------------------------------------------------------
 
-
 OptionValue MessageLevels
 {
 	0.0, "$OPTVAL_ITEMPICKUP"
@@ -1817,7 +1832,6 @@ OptionValue  JumpCrouchFreeLook
 	2, "$OPTVAL_ON"
 }
 
-
 OptionMenu GameplayOptions protected
 {
 	Position -35
@@ -1918,7 +1932,6 @@ OptionMenu CoopOptions protected
  *
  *=======================================*/
 
-
 OptionValue CompatModes
 {
 	0, "$OPTVAL_DEFAULT"
@@ -2013,7 +2026,6 @@ OptionMenu "CompatPhysicsMenu" protected
 	Class "CompatibilityMenu"
 }
 
-
 OptionMenu "CompatRenderMenu" protected
 {
 	Position -35
@@ -2053,7 +2065,6 @@ OptionValue SampleRates
 	48000,	"$OPTVAL_48000HZ"
 }
 
-
 OptionValue BufferSizes
 {
 	   0, "$OPTVAL_DEFAULT"
@@ -2065,7 +2076,6 @@ OptionValue BufferSizes
 	2048, "$OPTVAL_2048SAMPLES"
 	4096, "$OPTVAL_4096SAMPLES"
 }
-
 
 OptionValue BufferCounts
 {
@@ -2082,7 +2092,6 @@ OptionValue BufferCounts
 	  11, "11"
 	  12, "12"
 }
-
 
 OptionString ALDevices
 {
@@ -2106,7 +2115,6 @@ OptionString SpeakerModes
 	"7.1",		"$OPTSTR_7POINT1"
 }
 
-
 OptionString Resamplers
 {
 	"NoInterp",		"$OPTSTR_NOINTERPOLATION"
@@ -2115,7 +2123,6 @@ OptionString Resamplers
 	"Spline",		"$OPTSTR_SPLINE"
 }
 
-
 OptionMenu OpenALSoundItems protected
 {
 	Title "$OPENALMNU_TITLE"
@@ -2123,7 +2130,6 @@ OptionMenu OpenALSoundItems protected
 	Option "$OPENALMNU_ENABLEEFX",			"snd_efx",			"OnOff"
 	Option "$OPENALMNU_RESAMPLER",			"snd_alresampler",	"ALResamplers"
 }
-
 
 OptionValue MidiDevices
 {
@@ -2173,7 +2179,6 @@ OptionValue OplCores
 	2, "$OPTVAL_JAVAOPL3"
 	3, "$OPTVAL_NUKEDOPL3"
 }
-
 
 OptionMenu AdvSoundOptions protected
 {
@@ -2232,13 +2237,11 @@ OptionMenu OPNMIDICustomBanksMenu protected
 	Title "$ADVSNDMNU_OPNBANKFILE"
 }
 
-
 /*=======================================
  *
  * Module Replayer Options Menu
  *
  *=======================================*/
-
 
 OptionValue ModQuality
 {
@@ -2252,7 +2255,6 @@ OptionValue ModQuality
 	7.0, "$OPTVAL_SINC"
 }
 
-
 OptionValue ModVolumeRamps
 {
 	0.0, "$OPTVAL_NONE"
@@ -2265,7 +2267,6 @@ OptionValue ModReplayers
 	0.0, "$OPTVAL_LIBXMP"
 	1.0, "$OPTVAL_DUMB"
 }
-
 
 OptionMenu ModReplayerOptions protected
 {
@@ -2501,7 +2502,6 @@ OptionValue ScaleModes
 	4, "1280x800"
 	5, "$OPTVAL_CUSTOM"
 	1, "$OPTVAL_LOWEST"
-	7, "$OPTVAL_LOWEST12"
 }
 OptionValue CropAspect
 {
@@ -2766,7 +2766,6 @@ OptionValue "BillboardModes"
 	1, "$OPTVAL_XYAXIS"
 }
 
-
 OptionValue "Particles"
 {
 	0, "$OPTVAL_SQUARE"
@@ -2866,7 +2865,6 @@ OptionValue ShadowFilter
 	2, "$OPTVAL_PCF_MEDIUM"
 	3, "$OPTVAL_PCF_HIGH"
 }
-
 
 OptionMenu "GLTextureGLOptions" protected
 {

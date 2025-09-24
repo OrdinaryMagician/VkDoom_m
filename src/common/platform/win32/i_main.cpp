@@ -4,6 +4,7 @@
 **
 **---------------------------------------------------------------------------
 ** Copyright 1998-2009 Randy Heit
+** Copyright 2017-2025 GZDoom Maintainers and Contributors
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -41,6 +42,8 @@
 #include <commctrl.h>
 #include <string>
 #include <ShlObj.h>
+#include <richedit.h>
+#include <csignal>
 
 #include <processenv.h>
 #include <shellapi.h>
@@ -94,6 +97,7 @@ FString GetKnownFolder(int shell_folder, REFKNOWNFOLDERID known_folder, bool cre
 
 void DestroyCustomCursor();
 int GameMain();
+void SignalHandler(int signal);
 
 extern UINT TimerPeriod;
 extern bool RunningAsTool;

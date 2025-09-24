@@ -20,13 +20,13 @@ jobs:
 
         - name: macOS
           os: macos-14
-          deps_cmdline: brew install libvpx
+          deps_cmdline: brew install libvpx molten-vk vulkan-volk
           build_type: Release
 
         - name: macOS
           os: macos-14
           extra_options: -G Xcode -DDYN_OPENAL=OFF
-          deps_cmdline: brew install libvpx
+          deps_cmdline: brew install libvpx molten-vk vulkan-volk
           build_type: Debug
 
         - name: Linux GCC 9 # oldest version available
@@ -46,6 +46,7 @@ jobs:
           extra_options: -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
           deps_cmdline: sudo apt-get update && sudo apt-get install libsdl2-dev libvpx-dev libwebp-dev
           build_type: Release
+          export_appimage: true
 
         - name: Linux Clang 11 # oldest version available
           os: ubuntu-22.04
@@ -58,12 +59,14 @@ jobs:
           extra_options: -DCMAKE_C_COMPILER=clang-15 -DCMAKE_CXX_COMPILER=clang++-15
           deps_cmdline: sudo apt-get update && sudo apt-get install clang-15 libsdl2-dev libvpx-dev libwebp-dev
           build_type: Release
+          export_appimage: true
 
         - name: Linux Clang Latest # rolling default, not actually latest
           os: ubuntu-latest
           extra_options: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
           deps_cmdline: sudo apt-get update && sudo apt-get install libsdl2-dev libvpx-dev libwebp-dev
           build_type: Release
+          export_appimage: true
 
     steps:
     - uses: actions/checkout@v4
@@ -113,7 +116,6 @@ jobs:
         fi
 
     - name: Upload Package
-      if: runner.os == 'Windows' || matrix.config.name == 'Linux GCC 12'
       uses: actions/upload-artifact@v4
       with:
         path: build/package

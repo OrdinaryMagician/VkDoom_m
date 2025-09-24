@@ -3,6 +3,7 @@
  **
  **---------------------------------------------------------------------------
  ** Copyright 2012-2018 Alexey Lysiuk
+ ** Copyright 2017-2025 GZDoom Maintainers and Contributors
  ** All rights reserved.
  **
  ** Redistribution and use in source and binary forms, with or without
@@ -32,22 +33,24 @@
  */
 
 #ifdef HAVE_VULKAN
-#include <zvulkan/vulkansurface.h>
 #include <zvulkan/vulkanbuilders.h>
+#include <zvulkan/vulkansurface.h>
 #endif
 
 #include "i_common.h"
 #include "i_interface.h"
 
-#include "v_video.h"
 #include "bitmap.h"
 #include "c_dispatch.h"
+#include "gl_framebuffer.h"
 #include "hardware.h"
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_png.h"
+#include "printf.h"
 #include "st_console.h"
 #include "v_text.h"
+#include "v_video.h"
 #include "version.h"
 #include "printf.h"
 
@@ -56,6 +59,7 @@
 #endif
 
 bool I_CreateVulkanSurface(VkInstance instance, VkSurfaceKHR *surface);
+#endif
 
 extern bool ToggleFullscreen;
 
@@ -305,7 +309,9 @@ public:
 
 	~CocoaVideo()
 	{
+#ifdef HAVE_VULKAN
 		m_vulkanSurface.reset();
+#endif
 		ms_window = nil;
 	}
 

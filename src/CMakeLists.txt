@@ -60,6 +60,7 @@ if( WIN32 )
 		wsock32
 		winmm
 		dinput8
+		Xinput
 		ole32
 		user32
 		gdi32
@@ -133,6 +134,7 @@ else()
 	if( NOT APPLE OR NOT OSX_COCOA_BACKEND )
 		find_package( SDL2 REQUIRED )
 		include_directories( SYSTEM "${SDL2_INCLUDE_DIR}" )
+		link_directories(${SDL2_LINK_DIR})
 		set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} "${SDL2_LIBRARY}" )
 	endif()
 
@@ -1079,6 +1081,7 @@ set (PCH_SOURCES
 	common/engine/renderstyle.cpp
 	common/engine/v_colortables.cpp
 	common/engine/serializer.cpp
+	common/engine/m_haptics.cpp
 	common/engine/m_joy.cpp
 	common/engine/m_random.cpp
 	common/objects/autosegs.cpp
@@ -1445,11 +1448,18 @@ add_custom_command(TARGET zdoom POST_BUILD
 	${CMAKE_SOURCE_DIR}/fm_banks/gs-by-papiezak-and-sneakernets.wopn $<TARGET_FILE_DIR:zdoom>/fm_banks/gs-by-papiezak-and-sneakernets.wopn
 )
 
-if ( NOT APPLE AND NOT ZMUSIC_SYSTEM_INSTALL)
+if ( NOT ZMUSIC_SYSTEM_INSTALL AND (NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS))
 	# bring zmusic in
 	add_custom_command(TARGET zdoom POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:zmusic> $<TARGET_FILE_DIR:zdoom>
 		DEPENDS zmusic )
+	if ( NOT WIN32 )
+		add_custom_command(TARGET zdoom POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE_NAME:zmusic> $<TARGET_SONAME_FILE_NAME:zmusic>
+			COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_SONAME_FILE_NAME:zmusic> $<TARGET_LINKER_FILE_NAME:zmusic>
+			WORKING_DIRECTORY $<TARGET_FILE_DIR:zdoom>
+			DEPENDS zmusic )
+	endif()
 endif()
 
 if( WIN32 )
@@ -1514,6 +1524,17 @@ elseif(UNIX)
 	# backtrace wants -rdynamic to print friendly names.
 	# We should consider switching to libbacktrace as it reads DWARF debug info instead of staying with the API from 1865...
 	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic" )
+endif()
+
+if ( NOT ZMUSIC_SYSTEM_INSTALL )
+	if ( WIN32 OR APPLE )
+		# nothing to do
+	else()
+		install(TARGETS zmusic
+			LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+			COMPONENT "Game executable"
+		)
+	endif()
 endif()
 
 if( WIN32 )

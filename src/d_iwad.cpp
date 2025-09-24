@@ -468,6 +468,11 @@ void FIWadManager::CollectSearchPaths()
 				FString nice = NicePath(value);
 				if (nice.Len() > 0) mSearchPaths.Push(nice);
 			}
+			else if (stricmp(key, "RecursivePath") == 0)
+			{
+				FString nice = NicePath(value);
+				if (nice.Len() > 0) mRecursiveSearchPaths.Push(nice);
+			}
 		}
 	}
 	mSearchPaths.Append(I_GetGogPaths());
@@ -476,6 +481,11 @@ void FIWadManager::CollectSearchPaths()
 
 	// Unify and remove trailing slashes
 	for (auto &str : mSearchPaths)
+	{
+		FixPathSeperator(str);
+		if (str.Back() == '/') str.Truncate(str.Len() - 1);
+	}
+	for (auto& str : mRecursiveSearchPaths)
 	{
 		FixPathSeperator(str);
 		if (str.Back() == '/') str.Truncate(str.Len() - 1);
@@ -490,12 +500,12 @@ void FIWadManager::CollectSearchPaths()
 //
 //==========================================================================
 
-void FIWadManager::AddIWADCandidates(const char *dir)
+void FIWadManager::AddIWADCandidates(const char *dir, bool nosubdir)
 {
 	FileSys::FileList list;
 	FString iwadinfoName = "iwadinfo";
 
-	if (FileSys::ScanDirectory(list, dir, "*", true))
+	if (FileSys::ScanDirectory(list, dir, "*", nosubdir))
 	{
 		for(auto& entry : list)
 		{
@@ -551,8 +561,16 @@ void FIWadManager::ValidateIWADs()
 {
 	TArray<int> returns;
 	unsigned originalsize = mIWadInfos.Size();
-	for (auto &p : mFoundWads)
+
+	// Iterating normally will give CheckIWADInfo name conflicts priority to
+	// whatever file is found first, rather than the file that the user
+	// specifically requests with -iwad, because IdentifyVersion appends
+	// the -iwad file to the end of the list. (And it's annoying to change
+	// to be the other way around.)
+	for (int i = mFoundWads.SSize() - 1; i >= 0; i--)
 	{
+		auto &p = mFoundWads[i];
+
 		int index;
 		auto x = strrchr(p.mFullPath.GetChars(), '.');
 		if (x != nullptr && (!stricmp(x, ".iwad") || !stricmp(x, ".ipk3") || !stricmp(x, ".ipk7")))
@@ -603,6 +621,11 @@ FString FIWadManager::IWADPathFileSearch(const FString &file)
 		FString f = path + "/" + file;
 		if(FileExists(f)) return f;
 	}
+	for (const FString& path : mRecursiveSearchPaths)
+	{
+		FString f = RecursiveFileExists(path, file);
+		if (f.IsNotEmpty()) return f;
+	}
 
 	return "";
 }
@@ -620,6 +643,10 @@ int FIWadManager::IdentifyVersion (std::vector<std::string>&wadfiles, const char
 	for (auto &dir : mSearchPaths)
 	{
 		AddIWADCandidates(dir.GetChars());
+	}
+	for (auto& dir : mRecursiveSearchPaths)
+	{
+		AddIWADCandidates(dir.GetChars(), false);
 	}
 	unsigned numFoundWads = mFoundWads.Size();
 
@@ -643,6 +670,14 @@ int FIWadManager::IdentifyVersion (std::vector<std::string>&wadfiles, const char
 					{
 						mFoundWads.Push({ custwad, "", -1 });
 						isdiriwad = true;
+					}
+				}
+				for (const auto& dir : mRecursiveSearchPaths)
+				{
+					FString fullpath = RecursiveFileExists(dir, custwad);
+					if (fullpath.IsNotEmpty())
+					{
+						mFoundWads.Push({ fullpath, "", -1 });
 					}
 				}
 			}

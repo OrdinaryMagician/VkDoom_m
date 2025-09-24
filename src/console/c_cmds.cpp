@@ -1371,7 +1371,8 @@ CCMD (mapinfo)
 	if (myLevel->Music.IsNotEmpty())
 		Printf("               Music: %s%s\n", myLevel->Music[0] == '$'? "D_" : "", testlocalised(myLevel->Music.GetChars()));
 
-	Printf("        PixelStretch: %f\n", myLevel->pixelstretch);
+	if (myLevel->pixelstretch != 0.0) // yes, we're making a dummy if statement to fix the misleading indentation warnings
+		Printf("        PixelStretch: %f\n", myLevel->pixelstretch);
 
 	if (myLevel->RedirectType != NAME_None)
 		Printf("     Redirect (Item): %s\n", myLevel->RedirectType.GetChars());
@@ -1385,7 +1386,8 @@ CCMD (mapinfo)
 	if (myLevel->RedirectCVARMapName.IsNotEmpty())
 		Printf(" CVAR_Redirect (Map): %s\n", myLevel->RedirectCVARMapName.GetChars());
 
-	Printf("           LightMode: %i\n", (int8_t)myLevel->lightmode);
+	if ((int8_t)myLevel->lightmode != -128) // yes, we're making a dummy if statement to fix the misleading indentation warnings
+		Printf("           LightMode: %i\n", (int8_t)myLevel->lightmode);
 
 	if (players[consoleplayer].mo && players[consoleplayer].mo->Level)
 	{

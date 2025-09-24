@@ -668,6 +668,13 @@ void FStartScreen::Render(bool force)
 	// Do not refresh too often. This function gets called a lot more frequently than the screen can update.
 	if (nowtime - screen->FrameTime > minwaittime || force)
 	{
+		if (setmodeneeded)
+		{
+			setmodeneeded = false;
+			screen->ToggleFullscreen(vid_fullscreen);
+			V_OutputResized(screen->GetWidth(), screen->GetHeight());
+		}
+		
 		screen->FrameTime = nowtime;
 		screen->FrameTimeNS = I_nsTime();
 		screen->BeginFrame();

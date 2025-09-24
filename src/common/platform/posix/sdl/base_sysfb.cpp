@@ -3,6 +3,7 @@
 **
 **---------------------------------------------------------------------------
 ** Copyright 2005-2016 Christoph Oelckers et.al.
+** Copyright 2017-2025 GZDoom Maintainers and Contributors
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -33,17 +34,17 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "c_console.h"
+#include "c_dispatch.h"
 #include "i_module.h"
 #include "i_soundinternal.h"
 #include "i_system.h"
 #include "i_video.h"
 #include "i_interface.h"
 #include "m_argv.h"
+#include "printf.h"
 #include "v_video.h"
 #include "version.h"
-#include "c_console.h"
-#include "c_dispatch.h"
-#include "printf.h"
 
 #include "hardware.h"
 
@@ -58,7 +59,7 @@
 // MACROS ------------------------------------------------------------------
 
 #if defined HAVE_VULKAN
-#include <SDL_vulkan.h>
+#include <SDL2/SDL_vulkan.h>
 #endif // HAVE_VULKAN
 
 // TYPES -------------------------------------------------------------------
@@ -377,11 +378,6 @@ IVideo *gl_CreateVideo()
 SystemBaseFrameBuffer::SystemBaseFrameBuffer (void *, bool fullscreen)
 : DFrameBuffer (vid_defwidth, vid_defheight)
 {
-	if (Priv::window != nullptr)
-	{
-		SDL_SetWindowFullscreen(Priv::window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-		SDL_ShowWindow(Priv::window);
-	}
 }
 
 int SystemBaseFrameBuffer::GetClientWidth()
@@ -414,6 +410,7 @@ bool SystemBaseFrameBuffer::IsFullscreen ()
 
 void SystemBaseFrameBuffer::ToggleFullscreen(bool yes)
 {
+	SDL_ShowWindow(Priv::window);
 	SDL_SetWindowFullscreen(Priv::window, yes ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 	if ( !yes )
 	{
@@ -456,6 +453,7 @@ void SystemBaseFrameBuffer::SetWindowSize(int w, int h)
 		
 	}
 }
+
 
 
 void ProcessSDLWindowEvent(const SDL_WindowEvent &event)

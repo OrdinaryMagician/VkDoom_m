@@ -1,8 +1,9 @@
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
+//
 // Copyright 1993-1996 id Software
 // Copyright 1999-2016 Randy Heit
 // Copyright 2002-2016 Christoph Oelckers
+// Copyright 2017-2025 GZDoom Maintainers and Contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +29,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include "c_cvars.h"
+#include "i_soundinternal.h"
 #ifdef _WIN32
 #include <direct.h>
 #define WIN32_MEAN_AND_LEAN
@@ -41,41 +44,8 @@
 #include <math.h>
 #include <assert.h>
 
-#include "engineerrors.h"
-
-#include "i_time.h"
-#include "d_gui.h"
-#include "m_random.h"
-#include "doomdef.h"
-#include "doomstat.h"
-#include "gstrings.h"
-#include "filesystem.h"
-#include "s_sound.h"
-#include "v_video.h"
-#include "intermission/intermission.h"
-#include "wipe.h"
-#include "m_argv.h"
-#include "m_misc.h"
-#include "menu.h"
-#include "doommenu.h"
-#include "c_console.h"
-#include "c_dispatch.h"
-#include "i_sound.h"
-#include "i_video.h"
-#include "g_game.h"
-#include "hu_stuff.h"
-#include "wi_stuff.h"
-#include "st_stuff.h"
-#include "am_map.h"
-#include "p_setup.h"
-#include "r_utility.h"
-#include "r_sky.h"
-#include "d_main.h"
-#include "d_dehacked.h"
-#include "cmdlib.h"
-#include "v_text.h"
-#include "gi.h"
 #include "a_dynlight.h"
+#include "am_map.h"
 #include "gameconfigfile.h"
 #include "sbar.h"
 #include "decallib.h"
@@ -90,6 +60,7 @@
 #include "m_cheat.h"
 #include "m_joy.h"
 #include "v_draw.h"
+#include "v_palette.h"
 #include "po_man.h"
 #include "p_local.h"
 #include "autosegs.h"
@@ -109,16 +80,67 @@
 #include "d_buttons.h"
 #include "i_interface.h"
 #include "animations.h"
-#include "texturemanager.h"
+#include "autosegs.h"
+#include "c_buttons.h"
+#include "c_console.h"
+#include "c_cvars.h"
+#include "c_dispatch.h"
+#include "cmdlib.h"
+#include "common/scripting/dap/DebugServer.h"
+#include "d_buttons.h"
+#include "d_dehacked.h"
+#include "d_event.h"
+#include "d_main.h"
+#include "d_net.h"
+#include "d_netinf.h"
+#include "decallib.h"
+#include "doomdef.h"
+#include "doomfont.h"
+#include "doommenu.h"
+#include "doomstat.h"
+#include "engineerrors.h"
+#include "events.h"
+#include "filesystem.h"
+#include "findfile.h"
 #include "formats/multipatchtexture.h"
-#include "scriptutil.h"
-#include "v_palette.h"
-#include "texturemanager.h"
+#include "fragglescript/t_fs.h"
+#include "g_cvars.h"
+#include "g_game.h"
+#include "g_levellocals.h"
+#include "gameconfigfile.h"
+#include "gi.h"
+#include "gstrings.h"
+#include "hu_stuff.h"
 #include "hw_clock.h"
 #include "hwrenderer/scene/hw_drawinfo.h"
-#include "doomfont.h"
-#include "screenjob.h"
+#include "i_interface.h"
+#include "i_sound.h"
+#include "i_soundinternal.h"
+#include "i_system.h"
+#include "i_time.h"
+#include "i_video.h"
+#include "wipe.h"
+#include "m_argv.h"
+#include "m_cheat.h"
+#include "m_joy.h"
+#include "m_misc.h"
+#include "m_random.h"
+#include "md5.h"
+#include "menu.h"
+#include "p_local.h"
+#include "p_setup.h"
+#include "po_man.h"
+#include "r_data/r_vanillatrans.h"
+#include "r_sky.h"
+#include "r_utility.h"
+#include "s_music.h"
+#include "s_sound.h"
+#include "sbar.h"
+#include "sbarinfo.h"
 #include "startscreen.h"
+#include "st_stuff.h"
+#include "screenjob.h"
+#include "scriptutil.h"
 #include "shiftstate.h"
 #include "common/scripting/dap/DebugServer.h"
 #include "common/widgets/errorwindow.h"
@@ -206,6 +228,7 @@ EXTERN_CVAR (Bool, r_drawplayersprites)
 EXTERN_CVAR (Bool, show_messages)
 EXTERN_CVAR(Bool, ticker)
 EXTERN_CVAR(Bool, vid_fps)
+EXTERN_CVAR(Bool, haptics_do_menus)
 
 extern bool setmodeneeded;
 extern bool demorecording;
@@ -232,7 +255,6 @@ CUSTOM_CVAR(Float, i_timescale, 1.0f, CVAR_NOINITCALL | CVAR_VIRTUAL)
 		Printf("Time scale must be at least 0.05!\n");
 	}
 }
-
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
@@ -339,6 +361,7 @@ FString lastIWAD;
 int restart = 0;
 extern bool AppActive;
 bool playedtitlemusic;
+volatile sig_atomic_t gameloop_abort = false;
 
 FStartScreen* StartScreen;
 std::unique_ptr<DebugServer::DebugServer> debugServer;
@@ -347,7 +370,6 @@ cycle_t FrameCycles;
 
 // [SP] Store the capabilities of the renderer in a global variable, to prevent excessive per-frame processing
 uint32_t r_renderercaps = 0;
-
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -933,7 +955,7 @@ void D_Display ()
 	if (nodrawers || screen == NULL)
 		return; 				// for comparative timing / profiling
 	
-	if (!AppActive && (screen->IsFullscreen() || !vid_activeinbackground))
+	if (!AppActive && !setmodeneeded && (screen->IsFullscreen() || !vid_activeinbackground))
 	{
 		return;
 	}
@@ -1119,7 +1141,6 @@ void D_Display ()
 			ScreenJobDraw();
 			break;
 
-
 			default:
 				break;
 		}
@@ -1296,6 +1317,12 @@ void D_DoomLoop ()
 			D_ProcessEvents();
 			D_Display ();
 			S_UpdateMusic();
+
+			if (gameloop_abort)
+			{
+				C_DoCommand("quickexit");
+			}
+
 			if (wantToRestart)
 			{
 				wantToRestart = false;
@@ -1606,7 +1633,6 @@ void D_DoAdvanceDemo (void)
 		break;
 	}
 
-
 	if (pagename.IsNotEmpty())
 	{
 		Page = TexMan.CheckForTexture(pagename.GetChars(), ETextureType::MiscPatch);
@@ -1866,7 +1892,6 @@ static void GetCmdLineFiles(std::vector<std::string>& wadfiles, bool optional)
 		D_AddWildFile(wadfiles, args[i].GetChars(), ".wad", GameConfig, optional);
 	}
 }
-
 
 static FString ParseGameInfo(std::vector<std::string> &pwads, const char *fn, const char *data, int size)
 {
@@ -2327,7 +2352,6 @@ static void NewFailure ()
     I_FatalError ("Failed to allocate memory from system heap");
 }
 
-
 //==========================================================================
 //
 // RenameSprites
@@ -2508,6 +2532,7 @@ static void RenameSprites(FileSystem &fileSystem, const TArray<FString>& deletel
 // MD5 checksum for Unity version of NERVE.WAD: 4214c47651b63ee2257b1c2490a518c9 (3,821,966)
 //
 //==========================================================================
+
 void RenameNerve(FileSystem& fileSystem)
 {
 	if (gameinfo.gametype != GAME_Doom)
@@ -2695,7 +2720,6 @@ static void FindStrifeTeaserVoices(FileSystem& fileSystem)
 	}
 }
 
-
 static const char *DoomButtons[] =
 {
 	"am_panleft",
@@ -2856,14 +2880,13 @@ static bool System_CaptureModeInGame()
 
 static void System_PlayStartupSound(const char* sndname)
 {
-	S_Sound(CHAN_BODY, 0, sndname, 1, ATTN_NONE);
+	S_Sound(CHAN_BODY, CHANF_UI|(haptics_do_menus?CHANF_RUMBLE:CHANF_NORUMBLE), sndname, 1, ATTN_NONE);
 }
 
 static bool System_IsSpecialUI()
 {
 	return (generic_ui || !!log_vgafont || !!dlg_vgafont || ConsoleState != c_up || multiplayer ||
 		(menuactive == MENU_On && CurrentMenu && !CurrentMenu->IsKindOf("ConversationMenu")));
-
 }
 
 static bool System_DisableTextureFilter()
@@ -2990,7 +3013,6 @@ void System_CrashInfo(char* buffer, size_t bufflen, const char *lfstr)
 
 void System_M_Dim();
 
-
 static void PatchTextures()
 {
 	// The Hexen scripts use BLANK as a blank texture, even though it's really not.
@@ -3092,7 +3114,6 @@ static void Doom_CastSpriteIDToString(FString* a, unsigned int b)
 { 
 	*a = (b >= sprites.Size()) ? "TNT1" : sprites[b].name; 
 }
-
 
 extern DThinker* NextToThink;
 
@@ -3207,6 +3228,7 @@ static int FileSystemPrintf(FSMessageLevel level, const char* fmt, ...)
 	}
 	return (int)text.Len();
 }
+
 //==========================================================================
 //
 // D_InitGame
@@ -3304,8 +3326,6 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 		FString NewFilterName = (FString)"doom.doom" + LumpFilterIWAD.Mid(12); // "doom.id.doom" is 12 characters
 		lfi.gameTypeFilter.push_back(NewFilterName.GetChars());
 	}
-
-
 
 	GetReserved(lfi);
 
@@ -3405,6 +3425,7 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	FBaseCVar::EnableCallbacks ();
 
 	StartScreen = nostartscreen? nullptr : GetGameStartScreen(per_shader_progress > 0 ? max_progress * 10 / 9 : max_progress + 3);
+	setmodeneeded = true;
 	if (StartScreen != nullptr) StartScreen->Render();
 	
 	// +compatmode cannot be used on the command line, so use this as a substitute
@@ -3498,8 +3519,9 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	// [RH] Add any .deh and .bex files on the command line.
 	// If there are none, try adding any in the config file.
 	// Note that the command line overrides defaults from the config.
-
-	if ((ConsiderPatches("-deh") | ConsiderPatches("-bex")) == 0 &&
+	bool foundDeh = ConsiderPatches("-deh");
+	bool foundBex = ConsiderPatches("-bex");
+	if (!foundDeh && !foundBex &&
 		gameinfo.gametype == GAME_Doom && GameConfig->SetSection ("Doom.DefaultDehacked"))
 	{
 		const char *key;
@@ -3528,7 +3550,6 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	SetDefaultMenuColors();
 	M_Init();
 	M_CreateGameMenus();
-
 
 	// clean up the compiler symbols which are not needed any longer.
 	if (!dap_debugging) RemoveUnusedSymbols();
@@ -3619,7 +3640,7 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 			autostart = true;
 		}
 
-		S_Sound (CHAN_BODY, 0, "misc/startupdone", 1, ATTN_NONE);
+		S_Sound(CHAN_BODY, CHANF_UI|(haptics_do_menus?CHANF_RUMBLE:CHANF_NORUMBLE), "misc/startupdone", 1, ATTN_NONE);
 		if (!batchrun) Printf ("Init complete.\n");
 
 		if (RunningAsTool)
@@ -3725,6 +3746,7 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	staticEventManager.OnEngineInitialize();
 	return 0;
 }
+
 //==========================================================================
 //
 // D_DoomMain
@@ -3788,7 +3810,6 @@ int GameMain_Internal()
 		RemapUserTranslation
 	};
 
-	
 	std::set_new_handler(NewFailure);
 	batchout = Args->CheckValue("-errorlog");
 
@@ -3996,6 +4017,20 @@ int D_DoomMain_Game()
 	while (1);
 }
 
+void SignalHandler(int signal)
+{
+	if (gameloop_abort)
+	{
+		Printf("Received signal %d, exiting\n", signal);
+		exit(0);
+	}
+	else
+	{
+		Printf("Received signal %d, shutting down\n", signal);
+		gameloop_abort = true;
+	}
+}
+
 int GameMain()
 {
 	// On Windows, prefer the native win32 backend.
@@ -4004,7 +4039,10 @@ int GameMain()
 	if (!zwidget)
 		zwidget = DisplayBackend::TryCreateSDL2();
 	if (!zwidget)
+    {
+		fprintf(stderr, "Unable to create init zwidget\n");
 		return -1;
+    }
 	DisplayBackend::Set(std::move(zwidget));
 
 	int ret = 0;
@@ -4254,7 +4292,7 @@ CCMD(fs_dir)
 		auto fnid = fileSystem.GetResourceId(i);
 		auto length = fileSystem.FileLength(i);
 		bool hidden = fileSystem.FindFile(fn1) != i;
-		Printf(PRINT_HIGH | PRINT_NONOTIFY, "%s%-64s %-15s (%5d) %10d %s %s\n", hidden ? TEXTCOLOR_RED : TEXTCOLOR_UNTRANSLATED, fn1, fns, fnid, length, container, hidden ? "(h)" : "");
+		Printf(PRINT_HIGH | PRINT_NONOTIFY, "%s%-64s %-15s (%5d) %10ld %s %s\n", hidden ? TEXTCOLOR_RED : TEXTCOLOR_UNTRANSLATED, fn1, fns, fnid, length, container, hidden ? "(h)" : "");
 	}
 }
 
@@ -4265,6 +4303,6 @@ CCMD(type)
 	if (lump >= 0)
 	{
 		auto data = fileSystem.ReadFile(lump);
-		Printf("%.*s\n", data.size(), data.string());
+		Printf("%.*s\n", static_cast<int>(data.size()), data.string());
 	}
 }

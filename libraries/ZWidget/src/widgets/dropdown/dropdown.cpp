@@ -124,7 +124,7 @@ void Dropdown::ClearItems()
 void Dropdown::SetSelectedItem(int index)
 {
 	if (index < 0) index = 0;
-	if (index >= (int)items.size()) index = items.size() - 1;
+	if (index >= (int)items.size()) index = (int)items.size() - 1;
 
 	if (selectedItem == index) return;
 
@@ -270,7 +270,7 @@ void Dropdown::OnGeometryChanged()
 		Point pos = MapTo(Window(), Point(0,0));
 
 		double width = GetWidth() + GetNoncontentLeft() + GetNoncontentRight();
-		double innerH = GetDisplayItems() * 25.0 + 10.0;
+		double innerH = GetDisplayItems() * 20.0 + 20;
 		double outerH = GetHeight();
 
 		pos.x -= GetNoncontentLeft();
@@ -311,14 +311,14 @@ bool Dropdown::OpenDropdown()
 
 	listView->SetSelectedItem(selectedItem);
 
-	listView->OnActivated = [=]() { OnDropdownActivated(); };
-	listView->OnChanged = [=](int index) { OnDropdownActivated(); };
+	listView->OnActivated = [this]() { OnDropdownActivated(); };
+	listView->OnChanged = [this](int index) { OnDropdownActivated(); };
 
 	listView->SetFrameGeometry(
 		0,
 		0,
 		GetWidth() + GetNoncontentLeft() + GetNoncontentRight(),
-		GetDisplayItems() * 25.0 + 10.0
+		GetDisplayItems() * 20.0 + 20
 	);
 	OnGeometryChanged();
 

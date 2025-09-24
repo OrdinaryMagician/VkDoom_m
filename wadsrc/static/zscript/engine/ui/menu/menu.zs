@@ -3,7 +3,9 @@
 ** The menu engine core
 **
 **---------------------------------------------------------------------------
+**
 ** Copyright 2010-2020 Christoph Oelckers
+** Copyright 2017-2025 GZDoom Maintainers and Contributors
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -28,10 +30,10 @@
 ** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 ** THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
 **---------------------------------------------------------------------------
 **
 */
-
 
 struct KeyBindings native version("2.4")
 {
@@ -81,6 +83,10 @@ struct JoystickConfig native version("2.4")
 	native float GetSensitivity();
 	native void SetSensitivity(float scale);
 
+	native bool HasHaptics();
+	native float GetHapticsStrength();
+	native void SetHapticsStrength(float strength);
+
 	native float GetAxisScale(int axis);
 	native void SetAxisScale(int axis, float scale);
 
@@ -96,8 +102,15 @@ struct JoystickConfig native version("2.4")
 	native float GetAxisResponseCurvePoint(int axis, int point);
 	native void SetAxisResponseCurvePoint(int axis, int point, float value);
 
-	native int GetAxisMap(int axis);
-	native void SetAxisMap(int axis, int gameaxis);
+	deprecated("4.15.1", "Axis mapping was replaced with binds; remove this menu item") int GetAxisMap(int axis)
+	{
+		return JOYAXIS_None;
+	}
+
+	deprecated("4.15.1", "Axis mapping was replaced with binds; remove this menu item") void SetAxisMap(int axis, int gameaxis)
+	{
+		// NOP
+	}
 
 	native String GetName();
 	native int GetNumAxes();
@@ -110,6 +123,7 @@ struct JoystickConfig native version("2.4")
 	native bool GetEnabledInBackground();
 	native void SetEnabledInBackground(bool enabled);
 
+	native void Reset();
 }
 
 class Menu : Object native ui version("2.4")
@@ -129,7 +143,7 @@ class Menu : Object native ui version("2.4")
 		MKEY_Clear,
 		NUM_MKEYS,
 
-		// These are not buttons but events sent from other menus 
+		// These are not buttons but events sent from other menus
 
 		MKEY_Input,
 		MKEY_Abort,
@@ -207,7 +221,6 @@ class Menu : Object native ui version("2.4")
 		return false;
 	}
 
-
 	//=============================================================================
 	//
 	//
@@ -245,14 +258,14 @@ class Menu : Object native ui version("2.4")
 	//=============================================================================
 
 	virtual bool OnUIEvent(UIEvent ev)
-	{ 
+	{
 		bool res = false;
 		int y = ev.MouseY;
 		if (ev.type == UIEvent.Type_LButtonDown)
 		{
 			res = MouseEventBack(MOUSE_Click, ev.MouseX, y);
 			// make the menu's mouse handler believe that the current coordinate is outside the valid range
-			if (res) y = -1;	
+			if (res) y = -1;
 			res |= MouseEvent(MOUSE_Click, ev.MouseX, y);
 			if (res)
 			{
@@ -266,7 +279,7 @@ class Menu : Object native ui version("2.4")
 			if (mMouseCapture || m_use_mouse == 1)
 			{
 				res = MouseEventBack(MOUSE_Move, ev.MouseX, y);
-				if (res) y = -1;	
+				if (res) y = -1;
 				res |= MouseEvent(MOUSE_Move, ev.MouseX, y);
 			}
 		}
@@ -276,15 +289,15 @@ class Menu : Object native ui version("2.4")
 			{
 				SetCapture(false);
 				res = MouseEventBack(MOUSE_Release, ev.MouseX, y);
-				if (res) y = -1;	
+				if (res) y = -1;
 				res |= MouseEvent(MOUSE_Release, ev.MouseX, y);
 			}
 		}
-		return false; 
+		return false;
 	}
 
 	virtual bool OnInputEvent(InputEvent ev)
-	{ 
+	{
 		return false;
 	}
 
@@ -294,7 +307,7 @@ class Menu : Object native ui version("2.4")
 	//
 	//=============================================================================
 
-	virtual void Drawer () 
+	virtual void Drawer ()
 	{
 		if (self == GetCurrentMenu() && BackbuttonAlpha > 0 && m_show_backbutton >= 0 && m_use_mouse)
 		{
@@ -354,8 +367,12 @@ class Menu : Object native ui version("2.4")
 	//
 	//=============================================================================
 
-	static void MenuSound(Name snd)
+	static void MenuSound(Name snd, bool rumble = true)
 	{
+		if (rumble && CVar.GetCVar('haptics_do_menus').GetBool())
+		{
+			Haptics.Rumble(snd);
+		}
 		menuDelegate.PlaySound(snd);
 	}
 
@@ -369,7 +386,7 @@ class Menu : Object native ui version("2.4")
 		return NewSmallFont;
 	}
 
-	static int OptionHeight() 
+	static int OptionHeight()
 	{
 		return OptionFont().GetHeight();
 	}
@@ -385,7 +402,6 @@ class Menu : Object native ui version("2.4")
 		int overlay = grayed? Color(96,48,0,0) : 0;
 		screen.DrawText (OptionFont(), color, x, y, text, DTA_CleanNoMove_1, true, DTA_ColorOverlay, overlay, DTA_Localize, localize);
 	}
-
 
 }
 

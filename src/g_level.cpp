@@ -1743,8 +1743,6 @@ void FLevelLocals::MoveTravellers()
 		mo->section = nullptr;
 		mo->floorsector = mo->ceilingsector = nullptr;
 	}
-
-	TravellingThinkers.Clear();
 }
 
 //==========================================================================
