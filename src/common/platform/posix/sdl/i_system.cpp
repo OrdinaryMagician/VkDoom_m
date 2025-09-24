@@ -51,6 +51,7 @@
 #include <asm/unistd.h>
 #include <linux/perf_event.h>
 #include <sys/mman.h>
+#include "stats.h"
 #endif
 
 #if defined(__sun) || defined(__sun__)
@@ -173,7 +174,11 @@ void CalculateCPUSpeed()
 	PerfToMillisec = PerfToSec*1000.;
 #elif defined(__linux__)
 	// [MK] read from perf values if we can
+	double mhz;
 	struct perf_event_attr pe;
+	struct perf_event_mmap_page *pc;
+	int fd;
+	void *addr;
 	memset(&pe,0,sizeof(struct perf_event_attr));
 	pe.type = PERF_TYPE_HARDWARE;
 	pe.size = sizeof(struct perf_event_attr);
@@ -181,29 +186,63 @@ void CalculateCPUSpeed()
 	pe.disabled = 1;
 	pe.exclude_kernel = 1;
 	pe.exclude_hv = 1;
-	int fd = syscall(__NR_perf_event_open, &pe, 0, -1, -1, 0);
+	fd = syscall(__NR_perf_event_open, &pe, 0, -1, -1, 0);
 	if (fd == -1)
 	{
-		return;
+		goto calcspeed_fallback;
 	}
-	void *addr = mmap(nullptr, 4096, PROT_READ, MAP_SHARED, fd, 0);
+	addr = mmap(nullptr, 4096, PROT_READ, MAP_SHARED, fd, 0);
 	if (addr == nullptr)
 	{
 		close(fd);
-		return;
+		goto calcspeed_fallback;
 	}
-	struct perf_event_mmap_page *pc = (struct perf_event_mmap_page *)addr;
+	pc = (struct perf_event_mmap_page *)addr;
 	if (pc->cap_user_time != 1)
 	{
 		close(fd);
-		return;
+		goto calcspeed_fallback;
 	}
-	double mhz = (1000LU << pc->time_shift) / (double)pc->time_mult;
+	mhz = (1000LU << pc->time_shift) / (double)pc->time_mult;
 	PerfAvailable = true;
 	PerfToSec = .000001/mhz;
 	PerfToMillisec = PerfToSec*1000.;
 	if (!batchrun && !RunningAsTool) Printf("CPU speed: %.0f MHz\n", mhz);
 	close(fd);
+	return;
+calcspeed_fallback:
+	// [MK] in cases where the performance counters are not available, use
+	// a (potentially) less accurate fallback for estimating TSC frequency
+	//
+	// (note that by this point, the kernel has definitely flagged the TSC
+	// as unstable, but this should hopefully not cause any major issues in
+	// the engine)
+	struct timespec tenth_second, ts_start, ts_end;
+	uint64_t tsc_hz, ns, end, start;
+	double secs;
+	memset(&tenth_second,0,sizeof(struct timespec));
+	tenth_second.tv_nsec = 100000000LU;
+	if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts_start) == 0)
+	{
+		start = rdtsc();
+		nanosleep(&tenth_second,NULL);
+		clock_gettime(CLOCK_MONOTONIC_RAW, &ts_end);
+		end = rdtsc();
+		if ((start == 0) && (end == 0))
+		{
+			// rdtsc instruction or equivalent is not available,
+			// bail out early
+			return;
+		}
+		ns = ((ts_end.tv_sec-ts_start.tv_sec)*1000000000LU);
+		ns += (ts_end.tv_nsec-ts_start.tv_nsec);
+		secs = (double)ns/1000000000.;
+		tsc_hz = (uint64_t)((end-start)/secs);
+		PerfAvailable = true;
+		PerfToSec = 1./tsc_hz;
+		PerfToMillisec = PerfToSec*1000.;
+		if (!batchrun) Printf("CPU speed: ~%.0f MHz\n", tsc_hz/1000000.);
+	}
 #endif
 }
 
