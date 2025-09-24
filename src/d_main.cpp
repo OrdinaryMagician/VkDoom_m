@@ -3331,6 +3331,7 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	allwads.shrink_to_fit();
 	SetMapxxFlag();
 
+	bool norun = Args->CheckParm("-norun");
 	if (!(restart || norun))
 	{
 		// Note: this has to happen after the file system has been initialized (backends may load shaders during initialization)
@@ -3346,7 +3347,6 @@ static int D_InitGame(const FIWADInfo* iwad_info, std::vector<std::string>& allw
 	int max_progress = TexMan.GuesstimateNumTextures();
 	int per_shader_progress = 0;//screen->GetShaderCount()? (max_progress / 10 / screen->GetShaderCount()) : 0;
 
-	bool norun = Args->CheckParm("-norun");
 	bool nostartscreen = RunningAsTool || batchrun || restart || Args->CheckParm("-join") || Args->CheckParm("-host") || norun;
 
 	if (GameStartupInfo.Type == FStartupInfo::DefaultStartup)
